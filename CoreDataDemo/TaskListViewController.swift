@@ -48,35 +48,22 @@ class TaskListViewController: UITableViewController {
     }
     
     @objc private func addNewTask() {
-        showAlert(with: "New Task", and: "What do you want to do?")
+        showAlert(with: "New Task", and: "What do you want to do?") { task  in
+            self.save(task)
+        }
     }
     
     private func editTask(at indexPath: IndexPath) {
-        showEditAlert(at: indexPath, with: StorageManager.shared.taskList[indexPath.row].name ?? "", and: "How would you change this task?")
-    }
-    
-    private func showAlert(with title: String, and message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
-            self.save(task)
-        }
-        
-        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
-        
-        alert.addAction(saveAction)
-        alert.addAction(cancelAction)
-        alert.addTextField { textField in
-            textField.placeholder = "New Task"
-        }
-        present(alert, animated: true)
-    }
-    
-    private func showEditAlert(at indexPath: IndexPath, with title: String, and message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
+        showAlert(with: StorageManager.shared.taskList[indexPath.row].name ?? "", and: "How would you change this task?") { task  in
             self.edit(task, at: indexPath)
+        }
+    }
+    
+    private func showAlert(with title: String, and message: String, completion: @escaping(String) -> Void) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
+            completion(task)
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
@@ -134,4 +121,8 @@ extension TaskListViewController {
         let swipeActions = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
         return swipeActions
     }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
 }
