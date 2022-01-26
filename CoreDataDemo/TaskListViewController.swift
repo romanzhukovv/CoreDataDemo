@@ -6,27 +6,18 @@
 //
 
 import UIKit
-import CoreData
 
 class TaskListViewController: UITableViewController {
-    private let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     private let cellID = "task"
-    private var taskList: [Task] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellID)
         setupNavigationBar()
-        fetchData()
+        StorageManager.shared.fetchData()
     }
-    
-//    override func viewWillAppear(_ animated: Bool) {
-//        super.viewWillAppear(animated)
-//        fetchData()
-//        tableView.reloadData()
-//    }
  
     private func setupNavigationBar() {
         title = "Task List"
@@ -54,21 +45,14 @@ class TaskListViewController: UITableViewController {
         )
         
         navigationController?.navigationBar.tintColor = .white
-        
     }
     
     @objc private func addNewTask() {
         showAlert(with: "New Task", and: "What do you want to do?")
     }
     
-    private func fetchData() {
-        let fetchRequest = Task.fetchRequest()
-        
-        do {
-            taskList = try context.fetch(fetchRequest)
-        } catch {
-           print("Faild to fetch data", error)
-        }
+    private func editTask(at indexPath: IndexPath) {
+        showEditAlert(at: indexPath, with: StorageManager.shared.taskList[indexPath.row].name ?? "", and: "How would you change this task?")
     }
     
     private func showAlert(with title: String, and message: String) {
@@ -106,57 +90,26 @@ class TaskListViewController: UITableViewController {
     }
     
     private func save(_ taskName: String) {
-        let task = Task(context: context)
-        task.name = taskName
-        taskList.append(task)
-        
-        let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
+        StorageManager.shared.saveTask(taskName)
+        let cellIndex = IndexPath(row: StorageManager.shared.taskList.count - 1, section: 0)
         tableView.insertRows(at: [cellIndex], with: .automatic)
-        
-        do {
-            try context.save()
-        } catch let error {
-            print(error)
-        }
+
     }
     
     private func edit(_ newTaskName: String, at indexPath: IndexPath) {
-        let task = taskList[indexPath.row]
-        task.name = newTaskName
-        
-        do {
-            try context.save()
-        } catch let error {
-            print(error)
-        }
-        
+        StorageManager.shared.editTask(newTaskName, at: indexPath)
         tableView.reloadData()
-    }
-    
-    private func deleteTask(at indexPath: IndexPath) {
-        let task = taskList[indexPath.row]
-        context.delete(task)
-
-        do {
-            try context.save()
-        } catch let error {
-            print(error)
-        }
-    }
-    
-    private func editTask(at indexPath: IndexPath) {
-        showEditAlert(at: indexPath, with: taskList[indexPath.row].name ?? "", and: "How would you change this task?")
     }
 }
 
 extension TaskListViewController {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        taskList.count
+        StorageManager.shared.taskList.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
-        let task = taskList[indexPath.row]
+        let task = StorageManager.shared.taskList[indexPath.row]
         
         var content = cell.defaultContentConfiguration()
         content.text = task.name
@@ -166,8 +119,7 @@ extension TaskListViewController {
     
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { _, _, _ in
-            self.deleteTask(at: indexPath)
-            self.taskList.remove(at: indexPath.row)
+            StorageManager.shared.deleteTask(at: indexPath)
             tableView.deleteRows(at: [indexPath], with: .automatic)
         }
         
